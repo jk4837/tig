@@ -469,8 +469,10 @@ blame_request(struct view *view, enum request request, struct line *line)
 			break;
 
 		if (view_is_displayed(diff) &&
-		    !strcmp(blame->commit->id, diff->ref))
+		    !strcmp(blame->commit->id, diff->ref)) {
+			diff_common_jump(diff, blame->commit->filename, blame->lineno + 1);
 			break;
+		}
 
 		if (string_rev_is_null(blame->commit->id)) {
 			const char *diff_parent_argv[] = {
@@ -492,6 +494,14 @@ blame_request(struct view *view, enum request request, struct line *line)
 			if (diff->pipe)
 				string_copy_rev(diff->ref, NULL_ID);
 		} else {
+			if (view_no_refresh(diff, flags)) {
+				// maybe create state by own then initial can do this too
+				diff_common_jump(diff, blame->commit->filename, blame->lineno + 1);
+			} else {
+				// go from
+				string_ncopy(view->env->file, blame->commit->filename, strlen(blame->commit->filename));
+				view->env->goto_lineno = blame->lineno + 1;
+			}
 			open_diff_view(view, flags);
 		}
 		break;

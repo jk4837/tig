@@ -492,7 +492,7 @@ setup_update(struct view *view, const char *vid)
 	view->start_time = time(NULL);
 }
 
-static bool
+bool
 view_no_refresh(struct view *view, enum open_flags flags)
 {
 	bool reload = !!(flags & OPEN_ALWAYS_LOAD) || !view->lines;

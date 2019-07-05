@@ -408,6 +408,9 @@ diff_restore_line(struct view *view, struct diff_state *state)
 		unsigned int lineno = diff_get_lineno(view, line);
 
 		for (line++; view_has_line(view, line) && line->type != LINE_DIFF_CHUNK; line++) {
+			if (line->type != LINE_DIFF_DEL &&
+			    line->type != LINE_DIFF_DEL2)
+				lineno++;
 			if (lineno == state->lineno) {
 				unsigned long lineno = line - view->line;
 				unsigned long offset = lineno - (state->pos.lineno - state->pos.offset);
@@ -416,9 +419,6 @@ diff_restore_line(struct view *view, struct diff_state *state)
 				redraw_view(view);
 				return;
 			}
-			if (line->type != LINE_DIFF_DEL &&
-			    line->type != LINE_DIFF_DEL2)
-				lineno++;
 		}
 	}
 }
@@ -443,6 +443,12 @@ static bool
 diff_read(struct view *view, struct buffer *buf, bool force_stop)
 {
 	struct diff_state *state = view->private;
+
+	if (view->env->file && view->env->goto_lineno > 0) {
+		state->file = view->env->file;
+		state->lineno = view->env->goto_lineno;
+		view->env->goto_lineno = 0;
+	}
 
 	if (state->adding_describe_ref)
 		return diff_read_describe(view, buf, state);
@@ -552,6 +558,9 @@ diff_get_lineno(struct view *view, struct line *line)
 		return 0;
 
 	lineno = chunk_header.new.position;
+
+	if (line == chunk)
+		return lineno - 1;
 
 	for (chunk++; chunk < line; chunk++)
 		if (chunk->type != LINE_DIFF_DEL &&
@@ -673,6 +682,17 @@ diff_get_pathname(struct view *view, struct line *line)
 	if (!prefixcmp(name, "b/") || !prefixcmp(name, "w/"))
 		name += STRING_SIZE("b/");
 	return name;
+}
+
+void
+diff_common_jump(struct view *view, const char* file, unsigned int line)
+{
+	struct diff_state *state = view->private;
+
+	state->file = file;
+	state->lineno = line;
+
+	diff_restore_line(view, state);
 }
 
 enum request

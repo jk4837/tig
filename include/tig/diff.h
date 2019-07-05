@@ -30,6 +30,7 @@ struct diff_state {
 	struct io view_io;
 };
 
+void diff_common_jump(struct view *view, const char* file, unsigned int line);
 enum request diff_common_edit(struct view *view, enum request request, struct line *line);
 bool diff_common_read(struct view *view, const char *data, struct diff_state *state);
 enum request diff_common_enter(struct view *view, enum request request, struct line *line);
