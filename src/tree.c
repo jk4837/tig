@@ -350,6 +350,9 @@ tree_request(struct view *view, enum request request, struct line *line)
 			open_editor(view->env->file, 0);
 		}
 		return REQ_NONE;
+		
+	case REQ_CHILD:
+		return REQ_NONE;
 
 	case REQ_PARENT:
 	case REQ_BACK:

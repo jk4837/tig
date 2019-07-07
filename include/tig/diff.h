@@ -24,13 +24,14 @@ struct diff_state {
 	bool combined_diff;
 	bool adding_describe_ref;
 	bool highlight;
+	bool reverse_diff;
 	const char *file;
 	unsigned int lineno;
 	struct position pos;
 	struct io view_io;
 };
 
-void diff_common_jump(struct view *view, const char* file, unsigned int line);
+void diff_common_jump(struct view *view, const char* file, unsigned int lineno, unsigned int pos_lineno);
 enum request diff_common_edit(struct view *view, enum request request, struct line *line);
 bool diff_common_read(struct view *view, const char *data, struct diff_state *state);
 enum request diff_common_enter(struct view *view, enum request request, struct line *line);

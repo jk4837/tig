@@ -262,6 +262,7 @@ file_finder_input_handler(struct input *input, struct key *key)
 
 	case REQ_BACK:
 	case REQ_PARENT:
+	case REQ_CHILD:
 	case REQ_VIEW_CLOSE:
 	case REQ_VIEW_CLOSE_NO_QUIT:
 		return INPUT_CANCEL;

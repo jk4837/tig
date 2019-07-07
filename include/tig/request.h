@@ -32,6 +32,7 @@
 	REQ_(NEXT,		"Move to next"), \
 	REQ_(PREVIOUS,		"Move to previous"), \
 	REQ_(PARENT,		"Move to parent"), \
+	REQ_(CHILD,		"Move to children"), \
 	REQ_(VIEW_NEXT,		"Move focus to the next view"), \
 	REQ_(REFRESH,		"Reload and refresh view"), \
 	REQ_(MAXIMIZE,		"Maximize the current view"), \

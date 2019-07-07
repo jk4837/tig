@@ -408,8 +408,12 @@ diff_restore_line(struct view *view, struct diff_state *state)
 		unsigned int lineno = diff_get_lineno(view, line);
 
 		for (line++; view_has_line(view, line) && line->type != LINE_DIFF_CHUNK; line++) {
-			if (line->type != LINE_DIFF_DEL &&
-			    line->type != LINE_DIFF_DEL2)
+			if ((!state->reverse_diff && 
+					line->type != LINE_DIFF_DEL && 
+					line->type != LINE_DIFF_DEL2) ||
+				(state->reverse_diff && 
+					line->type != LINE_DIFF_ADD && 
+					line->type != LINE_DIFF_ADD2))
 				lineno++;
 			if (lineno == state->lineno) {
 				unsigned long lineno = line - view->line;
@@ -447,7 +451,10 @@ diff_read(struct view *view, struct buffer *buf, bool force_stop)
 	if (view->env->file && view->env->goto_lineno > 0) {
 		state->file = view->env->file;
 		state->lineno = view->env->goto_lineno;
+		state->pos.lineno = view->env->goto_pos_lineno;
+		state->reverse_diff = !view->env->go_forward;
 		view->env->goto_lineno = 0;
+		view->env->goto_pos_lineno = 0;
 	}
 
 	if (state->adding_describe_ref)
@@ -557,16 +564,22 @@ diff_get_lineno(struct view *view, struct line *line)
 	if (!parse_chunk_header(&chunk_header, box_text(chunk)))
 		return 0;
 
-	lineno = chunk_header.new.position;
+	lineno = view->env->go_forward ? chunk_header.new.position : chunk_header.old.position;
 
 	if (line == chunk)
 		return lineno - 1;
 
-	for (chunk++; chunk < line; chunk++)
-		if (chunk->type != LINE_DIFF_DEL &&
-		    chunk->type != LINE_DIFF_DEL2)
-			lineno++;
-
+	if (view->env->go_forward)
+		for (chunk++; chunk < line; chunk++)
+			if (chunk->type != LINE_DIFF_DEL &&
+			    chunk->type != LINE_DIFF_DEL2)
+				lineno++;
+	else
+		for (chunk++; chunk < line; chunk++)
+			if (chunk->type != LINE_DIFF_ADD &&
+			    chunk->type != LINE_DIFF_ADD2)
+				lineno++;
+	
 	return lineno;
 }
 
@@ -667,30 +680,37 @@ diff_get_pathname(struct view *view, struct line *line)
 			return dst + strlen(prefixes[i]);
 	}
 
-	header = find_next_line_by_type(view, header, LINE_DIFF_ADD_FILE);
+	header = find_next_line_by_type(view, header, !view->env->go_forward ? LINE_DIFF_DEL_FILE : LINE_DIFF_ADD_FILE);
 	if (!header)
 		return NULL;
 
 	name = box_text(header);
-	if (!prefixcmp(name, "+++ "))
+	if (view->env->go_forward && !prefixcmp(name, "+++ "))
 		name += STRING_SIZE("+++ ");
+	if (!view->env->go_forward && !prefixcmp(name, "--- "))
+		name += STRING_SIZE("--- ");
 
 	if (opt_diff_noprefix)
 		return name;
 
 	/* Handle mnemonic prefixes, such as "b/" and "w/". */
-	if (!prefixcmp(name, "b/") || !prefixcmp(name, "w/"))
+	if (view->env->go_forward && 
+		(!prefixcmp(name, "b/") || !prefixcmp(name, "w/")))
 		name += STRING_SIZE("b/");
+	if (!view->env->go_forward && 
+		(!prefixcmp(name, "a/") || !prefixcmp(name, "w/")))
+		name += STRING_SIZE("a/");
 	return name;
 }
 
 void
-diff_common_jump(struct view *view, const char* file, unsigned int line)
+diff_common_jump(struct view *view, const char* file, unsigned int lineno, unsigned int pos_lineno)
 {
 	struct diff_state *state = view->private;
 
 	state->file = file;
-	state->lineno = line;
+	state->lineno = lineno;
+	state->pos.lineno = pos_lineno;
 
 	diff_restore_line(view, state);
 }

@@ -79,6 +79,7 @@ View manipulation
          <Down>, <Ctrl-N>, J next                Move to next
            <Up>, <Ctrl-P>, K previous            Move to previous
                          ',' parent              Move to parent
+                         '.' child               Move to children
                        <Tab> view-next           Move focus to the next view
                      R, <F5> refresh             Reload and refresh view
                            O maximize            Maximize the current view

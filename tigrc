@@ -218,6 +218,7 @@ bind generic	<Up>	previous		# Move to previous
 bind generic	<C-P>	previous
 bind generic	K	previous
 bind generic	,	parent			# Move to parent
+bind generic    .   child           # Move to children
 bind generic	<Tab>	view-next		# Move focus to the next view
 bind generic	R	refresh			# Reload and refresh view
 bind generic	<F5>	refresh

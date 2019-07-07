@@ -397,6 +397,47 @@ setup_blame_parent_line(struct view *view, struct blame *blame)
 	io_done(&io);
 }
 
+static bool
+setup_blame_child_line(struct view *view, struct blame *blame,
+		struct blame_header *header, struct blame_commit *commit)
+{
+	char author[SIZEOF_STR] = "";
+	char line_arg[SIZEOF_STR];
+	char from_to[SIZEOF_REF*2 + SIZEOF_STR*2 + 2];
+
+	const char *blame_argv[] = {
+		"git", "blame", encoding_arg, "--reverse", "-p", line_arg, from_to, "--", blame->commit->filename, NULL
+	};
+	struct io io;
+	bool ok = false;
+	struct buffer buf;
+
+	if (!string_format(line_arg, "-L%ld,+1", blame->lineno + 1) ||
+		!string_format(from_to, "%s..%s", view->env->ref, view->env->head))
+		return false;
+
+	if (!io_run(&io, IO_RD, repo.exec_dir, NULL, blame_argv))
+		return false;
+
+	while (io_get(&io, &buf, '\n', true)) {
+		if (header) {
+			if (!parse_blame_header(header, buf.data, 9999999))
+				break;
+			header = NULL;
+
+		} else if (parse_blame_info(commit, author, buf.data)) {
+			ok = commit->filename != NULL;
+			break;
+		}
+	}
+
+	if (io_error(&io))
+		ok = false;
+
+	io_done(&io);
+	return ok;
+}
+
 static void
 blame_go_forward(struct view *view, struct blame *blame, bool parent)
 {
@@ -460,6 +501,26 @@ blame_request(struct view *view, enum request request, struct line *line)
 		blame_go_forward(view, blame, request == REQ_PARENT);
 		break;
 
+	case REQ_CHILD:
+		if (!check_blame_commit(blame, request == REQ_VIEW_BLAME))
+			break;
+		struct blame_header header;
+		struct blame_commit commit;
+		if (!setup_blame_child_line(view, blame, &header, &commit) || !commit.filename) {
+			report("Null commit file");
+			break;
+		}
+		string_ncopy(view->env->file, commit.filename, strlen(commit.filename));
+		string_copy(view->env->ref, commit.parent_id);
+		string_copy(view->env->commit, commit.parent_id);
+		view->env->goto_lineno = header.orig_lineno - 1;
+		// reload_view(view);
+
+		view->env->go_forward = false;
+		view->env->goto_pos_lineno = view->pos.lineno;
+		open_diff_view(view, flags);		
+		break;
+
 	case REQ_BACK:
 		blame_go_back(view);
 		break;
@@ -470,7 +531,7 @@ blame_request(struct view *view, enum request request, struct line *line)
 
 		if (view_is_displayed(diff) &&
 		    !strcmp(blame->commit->id, diff->ref)) {
-			diff_common_jump(diff, blame->commit->filename, blame->lineno + 1);
+			diff_common_jump(diff, blame->commit->filename, blame->lineno + 1, view->pos.lineno);
 			break;
 		}
 
@@ -496,11 +557,13 @@ blame_request(struct view *view, enum request request, struct line *line)
 		} else {
 			if (view_no_refresh(diff, flags)) {
 				// maybe create state by own then initial can do this too
-				diff_common_jump(diff, blame->commit->filename, blame->lineno + 1);
+				diff_common_jump(diff, blame->commit->filename, blame->lineno + 1, view->pos.lineno);
 			} else {
 				// go from
+				view->env->go_forward = true;
 				string_ncopy(view->env->file, blame->commit->filename, strlen(blame->commit->filename));
 				view->env->goto_lineno = blame->lineno + 1;
+				view->env->goto_pos_lineno = view->pos.lineno;
 			}
 			open_diff_view(view, flags);
 		}

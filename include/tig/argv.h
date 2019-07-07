@@ -38,6 +38,7 @@ bool argv_contains(const char **argv, const char *arg);
 
 typedef char argv_string[SIZEOF_STR];
 typedef unsigned long argv_number;
+typedef bool argv_bool;
 
 #define ARGV_ENV_INFO(_) \
 	_(argv_string,	 commit,	"",		"HEAD") \
@@ -60,6 +61,8 @@ typedef unsigned long argv_number;
 struct argv_env {
 	ARGV_ENV_INFO(ARGV_ENV_FIELDS)
 	unsigned long goto_lineno;
+	unsigned long goto_pos_lineno;
+	bool go_forward;
 	char search[SIZEOF_STR];
 	char none[1];
 };
