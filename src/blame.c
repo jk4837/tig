@@ -397,13 +397,29 @@ setup_blame_parent_line(struct view *view, struct blame *blame)
 	io_done(&io);
 }
 
+static void
+print_argv(int argc, const char *argv[]) {
+	int i, len = 0, pos = 0;
+	char *cmd = NULL;
+	for(i = 0; i < argc; i++)
+		len += strlen(argv[i]) + 1;
+
+	cmd = (char*) malloc((len + 1) * sizeof(char));
+	for(i = 0; i < argc; i++) {
+		sprintf(cmd + pos, "%s ", argv[i]);
+		pos += strlen(argv[i]) + 1;
+	}
+	printf("\n%s\n", cmd);
+	free(cmd);
+}
+
 static bool
-setup_blame_child_line(struct view *view, struct blame *blame,
+setup_blame_child_commit(struct view *view, struct blame *blame,
 		struct blame_header *header, struct blame_commit *commit)
 {
 	char author[SIZEOF_STR] = "";
 	char line_arg[SIZEOF_STR];
-	char from_to[SIZEOF_REF*2 + SIZEOF_STR*2 + 2];
+	char from_to[SIZEOF_REF*2 + SIZEOF_STR*2 + 2 + 1];
 
 	const char *blame_argv[] = {
 		"git", "blame", encoding_arg, "--reverse", "-p", line_arg, from_to, "--", blame->commit->filename, NULL
@@ -413,16 +429,17 @@ setup_blame_child_line(struct view *view, struct blame *blame,
 	struct buffer buf;
 
 	if (!string_format(line_arg, "-L%ld,+1", blame->lineno + 1) ||
-		!string_format(from_to, "%s..%s", view->env->ref, view->env->head))
+		!string_format(from_to, "%s..%s", view->env->commit, view->env->head))
 		return false;
-
+// print_argv(9, blame_argv);
 	if (!io_run(&io, IO_RD, repo.exec_dir, NULL, blame_argv))
 		return false;
 
 	while (io_get(&io, &buf, '\n', true)) {
 		if (header) {
-			if (!parse_blame_header(header, buf.data, 9999999))
+			if (!parse_blame_header(header, buf.data, 9999999)) {
 				break;
+			}
 			header = NULL;
 
 		} else if (parse_blame_info(commit, author, buf.data)) {
@@ -436,6 +453,112 @@ setup_blame_child_line(struct view *view, struct blame *blame,
 
 	io_done(&io);
 	return ok;
+}
+
+static void
+setup_blame_child_line(struct view *view, struct blame *blame)
+{
+	struct blame_header header;
+	struct blame_commit commit;
+
+	setup_blame_child_commit(view, blame, &header, &commit);
+	// commit.parent_id
+	// header.orig_lineno - 1
+
+	char from[SIZEOF_REF + SIZEOF_STR];
+	char to[SIZEOF_REF + SIZEOF_STR];
+	const char *diff_tree_argv[] = {
+		"git", "diff", encoding_arg, "--no-textconv", "--no-ext-diff",
+			"--no-color", "-U0", from, to, "--", NULL
+	};
+	struct io io;
+	int parent_lineno = -1;
+	int blamed_lineno = -1;
+	struct buffer buf;
+
+	if (!string_format(from, "%s:%s", view->env->commit, view->env->file) ||
+	    !string_format(to, "%s:%s", commit.parent_id, commit.parent_filename) ||
+	    !io_run(&io, IO_RD, NULL, NULL, diff_tree_argv))
+		return;
+
+	while (io_get(&io, &buf, '\n', true)) {
+		char *line = buf.data;
+
+		if (*line == '@') {
+			char *pos = strchr(line, '+');
+
+			parent_lineno = atoi(line + 4);
+			if (pos)
+				blamed_lineno = atoi(pos + 1);
+
+		} else if (*line == '-' && blamed_lineno != -1) {
+			if ((header.lineno == parent_lineno) &&
+			    !strcmp(blame->text, line + 1)) {
+				view->pos.lineno = blamed_lineno ? blamed_lineno - 1 : 0;
+				string_ncopy(view->env->ref, commit.parent_id, sizeof(commit.parent_id));
+				string_ncopy(view->env->file, commit.parent_filename, strlen(commit.parent_filename));
+				break;
+			}
+			parent_lineno++;
+			blamed_lineno++;
+		}
+	}
+
+	io_done(&io);
+}
+
+static void
+blame_go_backward(struct view *view, struct blame *blame, bool parent)
+{
+	struct blame_state *state = view->private;
+	struct blame_history_state *history_state = &state->history_state;
+	// struct blame_commit *commit = blame->commit;
+	// const char *id = parent ? commit->parent_id : commit->id;
+	// const char *filename = parent ? commit->parent_filename : commit->filename;
+
+	// if (!*id && parent) {
+	// 	report("XXX The selected commit has no parents");
+	// 	return;
+	// }
+	//
+	// if (!strcmp(history_state->id, id) && !strcmp(history_state->filename, filename)) {
+	// 	report("The selected commit is already displayed");
+	// 	return;
+	// }
+
+	if (!push_view_history_state(&blame_view_history, &view->pos, history_state)) {
+		report("Failed to save current view state");
+		return;
+	}
+
+	setup_blame_child_line(view, blame);
+	// commit = blame->commit;
+
+	// if ('\0' == commit->parent_id[0] || string_rev_is_null(commit->parent_id)) {
+	// 	report("The selected commit has null previous");
+	// 	return;
+	// }
+	// if (!strcmp(commit->parent_id, view->env->head)) {
+	// 	report("The selected commit has no childrens");
+	// 	return;
+	// }
+	// if (!commit->filename) {
+	// 	report("Null commit file");
+	// 	return;
+	// }
+	// struct blame_commit *commit = blame->commit;
+	// string_ncopy(view->env->file, commit.filename, strlen(commit.filename));
+	// string_copy(view->env->ref, commit.parent_id);
+	// string_copy(view->env->commit, commit.parent_id);
+	// view->env->goto_lineno = header.orig_lineno - 1;
+	// view->env->go_forward = false;
+	// reload_view(view);
+
+	// string_ncopy(view->env->ref, commit->id, sizeof(commit->id));
+	// string_ncopy(view->env->file, commit->filename, strlen(commit->filename));
+	// if (parent)
+	view->env->goto_lineno = view->pos.lineno;
+	reload_view(view);
 }
 
 static void
@@ -492,6 +615,8 @@ blame_request(struct view *view, enum request request, struct line *line)
 	enum open_flags flags = view_is_displayed(view) ? OPEN_SPLIT : OPEN_DEFAULT;
 	struct blame *blame = line->data;
 	struct view *diff = &diff_view;
+	struct blame_header header;
+	struct blame_commit commit;
 
 	switch (request) {
 	case REQ_VIEW_BLAME:
@@ -504,21 +629,48 @@ blame_request(struct view *view, enum request request, struct line *line)
 	case REQ_CHILD:
 		if (!check_blame_commit(blame, request == REQ_VIEW_BLAME))
 			break;
-		struct blame_header header;
-		struct blame_commit commit;
-		if (!setup_blame_child_line(view, blame, &header, &commit) || !commit.filename) {
+		blame_go_backward(view, blame, request == REQ_CHILD);
+		break;
+
+	case REQ_SENTER:
+		if (!check_blame_commit(blame, request == REQ_VIEW_BLAME))
+			break;
+		if (!setup_blame_child_commit(view, blame, &header, &commit)) {
+			report("Failed to setup blame child line");
+			break;
+		}
+		if ('\0' == commit.parent_id[0] || string_rev_is_null(commit.parent_id)) {
+			report("The selected commit has null previous");
+			break;
+		}
+		if (!strcmp(commit.parent_id, view->env->head)) {
+			report("The selected commit has no childrens");
+			break;
+		}
+		if (!commit.filename) {
 			report("Null commit file");
 			break;
 		}
-		string_ncopy(view->env->file, commit.filename, strlen(commit.filename));
-		string_copy(view->env->ref, commit.parent_id);
-		string_copy(view->env->commit, commit.parent_id);
-		view->env->goto_lineno = header.orig_lineno - 1;
-		// reload_view(view);
+		if (view_is_displayed(diff) &&
+		    !strcmp(blame->commit->id, diff->ref) &&
+		    !diff->env->go_forward) {
+			diff_common_jump(diff, blame->commit->filename, blame->lineno + 1, view->pos.lineno, false);
+			break;
+		}
 
-		view->env->go_forward = false;
-		view->env->goto_pos_lineno = view->pos.lineno;
-		open_diff_view(view, flags);		
+		if (view_no_refresh(diff, flags)) {
+			// maybe create state by own then initial can do this too
+			diff_common_jump(diff, blame->commit->filename, blame->lineno + 1, view->pos.lineno, false);
+		} else {
+			// go from
+			string_ncopy(view->env->file, commit.filename, strlen(commit.filename));
+			string_copy(view->env->ref, commit.parent_id);
+			string_copy(view->env->commit, commit.parent_id);
+			view->env->goto_lineno = header.orig_lineno;
+			view->env->go_forward = false;
+			view->env->goto_pos_lineno = view->pos.lineno;
+		}
+		open_diff_view(view, flags);
 		break;
 
 	case REQ_BACK:
@@ -530,8 +682,9 @@ blame_request(struct view *view, enum request request, struct line *line)
 			break;
 
 		if (view_is_displayed(diff) &&
-		    !strcmp(blame->commit->id, diff->ref)) {
-			diff_common_jump(diff, blame->commit->filename, blame->lineno + 1, view->pos.lineno);
+		    !strcmp(blame->commit->id, diff->ref) &&
+		    diff->env->go_forward) {
+			diff_common_jump(diff, blame->commit->filename, blame->lineno + 1, view->pos.lineno, true);
 			break;
 		}
 
@@ -557,7 +710,7 @@ blame_request(struct view *view, enum request request, struct line *line)
 		} else {
 			if (view_no_refresh(diff, flags)) {
 				// maybe create state by own then initial can do this too
-				diff_common_jump(diff, blame->commit->filename, blame->lineno + 1, view->pos.lineno);
+				diff_common_jump(diff, blame->commit->filename, blame->lineno + 1, view->pos.lineno, true);
 			} else {
 				// go from
 				view->env->go_forward = true;

@@ -281,6 +281,9 @@ view_driver(struct view *view, enum request request)
 	case REQ_CHILD:
 		report("Moving to children is not supported by the %s view", view->name);
 		break;
+	case REQ_SENTER:
+		report("Enter to children is not supported by the %s view", view->name);
+		break;
 
 	case REQ_PARENT:
 		report("Moving to parent is not supported by the %s view", view->name);

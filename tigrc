@@ -210,6 +210,7 @@ bind generic	g	view-grep
 
 # View manipulation
 bind generic	<Enter>	enter			# Enter and open selected entry
+bind generic    <C-K> senter           # Enter and open selected entry for reverse type
 bind generic	<Lt>	back			# Go back to the previous view state
 bind generic	<Down>	next			# Move to next
 bind generic	<C-N>	next

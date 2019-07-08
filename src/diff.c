@@ -408,11 +408,11 @@ diff_restore_line(struct view *view, struct diff_state *state)
 		unsigned int lineno = diff_get_lineno(view, line);
 
 		for (line++; view_has_line(view, line) && line->type != LINE_DIFF_CHUNK; line++) {
-			if ((!state->reverse_diff && 
-					line->type != LINE_DIFF_DEL && 
+			if ((!state->reverse_diff &&
+					line->type != LINE_DIFF_DEL &&
 					line->type != LINE_DIFF_DEL2) ||
-				(state->reverse_diff && 
-					line->type != LINE_DIFF_ADD && 
+				(state->reverse_diff &&
+					line->type != LINE_DIFF_ADD &&
 					line->type != LINE_DIFF_ADD2))
 				lineno++;
 			if (lineno == state->lineno) {
@@ -579,7 +579,7 @@ diff_get_lineno(struct view *view, struct line *line)
 			if (chunk->type != LINE_DIFF_ADD &&
 			    chunk->type != LINE_DIFF_ADD2)
 				lineno++;
-	
+
 	return lineno;
 }
 
@@ -694,23 +694,26 @@ diff_get_pathname(struct view *view, struct line *line)
 		return name;
 
 	/* Handle mnemonic prefixes, such as "b/" and "w/". */
-	if (view->env->go_forward && 
+	if (view->env->go_forward &&
 		(!prefixcmp(name, "b/") || !prefixcmp(name, "w/")))
 		name += STRING_SIZE("b/");
-	if (!view->env->go_forward && 
+	if (!view->env->go_forward &&
 		(!prefixcmp(name, "a/") || !prefixcmp(name, "w/")))
 		name += STRING_SIZE("a/");
 	return name;
 }
 
 void
-diff_common_jump(struct view *view, const char* file, unsigned int lineno, unsigned int pos_lineno)
+diff_common_jump(struct view *view, const char* file, unsigned int lineno, unsigned int pos_lineno, bool go_forward)
 {
 	struct diff_state *state = view->private;
+
+	view->env->go_forward = go_forward;
 
 	state->file = file;
 	state->lineno = lineno;
 	state->pos.lineno = pos_lineno;
+	state->reverse_diff = !go_forward;
 
 	diff_restore_line(view, state);
 }

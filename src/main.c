@@ -570,6 +570,9 @@ main_request(struct view *view, enum request request, struct line *line)
 	case REQ_CHILD:
 		// goto_id(view, "%(commit)^", true, false);
 		break;
+	case REQ_SENTER:
+		// goto_id(view, "%(commit)^", true, false);
+		break;
 
 	case REQ_PARENT:
 		goto_id(view, "%(commit)^", true, false);
