@@ -218,10 +218,16 @@ parse_chunk_header(struct chunk_header *header, const char *line)
 	else
 		return false;
 
-	return  parse_ulong(&line, &header->old.position, '-', false) &&
-		parse_ulong(&line, &header->old.lines, ',', true) &&
-		parse_ulong(&line, &header->new.position, '+', false) &&
-		parse_ulong(&line, &header->new.lines, ',', false);
+	bool ret = true;
+	ret &= parse_ulong(&line, &header->old.position, '-', true);
+	if (!parse_ulong(&line, &header->old.lines, ',', true)) {
+		header->old.position--;
+	}
+	ret &= parse_ulong(&line, &header->new.position, '+', true);
+	if (!parse_ulong(&line, &header->new.lines, ',', true)) {
+		header->new.position--;
+	}
+	return ret;
 }
 
 bool

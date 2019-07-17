@@ -564,7 +564,10 @@ diff_get_lineno(struct view *view, struct line *line)
 	if (!parse_chunk_header(&chunk_header, box_text(chunk)))
 		return 0;
 
-	lineno = view->env->go_forward ? chunk_header.new.position : chunk_header.old.position;
+	if (view->env->go_forward)
+		lineno = (0 == chunk_header.new.lines) ? chunk_header.new.position - 1 : chunk_header.new.position;
+	else
+		lineno = (0 == chunk_header.old.lines) ? chunk_header.old.position - 1 : chunk_header.old.position;
 
 	if (line == chunk)
 		return lineno - 1;
