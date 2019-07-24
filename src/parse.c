@@ -208,7 +208,7 @@ bool
 parse_chunk_header(struct chunk_header *header, const char *line)
 {
 	memset(header, 0, sizeof(*header));
-	header->new.lines = header->old.lines = 1;
+	header->new.lines = header->old.lines = 0;
 
 	if (!prefixcmp(line, "@@ -"))
 		line += STRING_SIZE("@@ -") - 1;
@@ -220,12 +220,12 @@ parse_chunk_header(struct chunk_header *header, const char *line)
 
 	bool ret = true;
 	ret &= parse_ulong(&line, &header->old.position, '-', true);
-	if (!parse_ulong(&line, &header->old.lines, ',', true)) {
-		header->old.position--;
+	if (!parse_ulong(&line, &header->old.lines, ',', false)) {
+		header->old.lines = 0;
 	}
 	ret &= parse_ulong(&line, &header->new.position, '+', true);
-	if (!parse_ulong(&line, &header->new.lines, ',', true)) {
-		header->new.position--;
+	if (!parse_ulong(&line, &header->new.lines, ',', false)) {
+		header->new.lines = 0;
 	}
 	return ret;
 }

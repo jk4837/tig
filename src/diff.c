@@ -379,6 +379,8 @@ diff_save_line(struct view *view, struct diff_state *state, enum open_flags flag
 			state->file = get_path(file);
 			state->lineno = diff_get_lineno(view, line);
 			state->pos = view->pos;
+			state->reverse_diff = (line->type == LINE_DIFF_DEL || line->type == LINE_DIFF_DEL2);
+			report("save %s:%d", state->file, state->lineno);
 		}
 	}
 }
@@ -390,7 +392,8 @@ diff_restore_line(struct view *view, struct diff_state *state)
 
 	if (!state->file)
 		return;
-
+	view->env->go_forward = !state->reverse_diff;
+	report("restore %c%s:%d", state->reverse_diff ? '-' : '+', state->file, state->lineno);
 	while ((line = find_prev_line_by_type(view, line, LINE_DIFF_HEADER))) {
 		const char *file = diff_get_pathname(view, line);
 
@@ -564,24 +567,23 @@ diff_get_lineno(struct view *view, struct line *line)
 	if (!parse_chunk_header(&chunk_header, box_text(chunk)))
 		return 0;
 
-	if (view->env->go_forward)
-		lineno = (0 == chunk_header.new.lines) ? chunk_header.new.position - 1 : chunk_header.new.position;
-	else
-		lineno = (0 == chunk_header.old.lines) ? chunk_header.old.position - 1 : chunk_header.old.position;
+	lineno = view->env->go_forward ? chunk_header.new.position : chunk_header.old.position;
 
-	if (line == chunk)
+	if (line == chunk) {
 		return lineno - 1;
+	}
 
-	if (view->env->go_forward)
+	if (view->env->go_forward) {
 		for (chunk++; chunk < line; chunk++)
 			if (chunk->type != LINE_DIFF_DEL &&
 			    chunk->type != LINE_DIFF_DEL2)
 				lineno++;
-	else
+	} else {
 		for (chunk++; chunk < line; chunk++)
 			if (chunk->type != LINE_DIFF_ADD &&
 			    chunk->type != LINE_DIFF_ADD2)
 				lineno++;
+	}
 
 	return lineno;
 }
@@ -791,11 +793,12 @@ diff_common_select(struct view *view, struct line *line, const char *changes_msg
 		const char *file = diff_get_pathname(view, line);
 
 		if (file) {
-			if (changes_msg)
-				string_format(view->ref, "%s to '%s'", changes_msg, file);
 			string_format(view->env->file, "%s", file);
+			view->env->go_forward = (line->type != LINE_DIFF_DEL) && (line->type != LINE_DIFF_DEL2);
 			view->env->lineno = view->env->goto_lineno = diff_get_lineno(view, line);
 			view->env->blob[0] = 0;
+			if (changes_msg)
+				string_format(view->ref, "%s to '%c%s:%ld'", changes_msg, view->env->go_forward ? '+' : '-', file, view->env->lineno);
 		} else {
 			string_ncopy(view->ref, view->ops->id, strlen(view->ops->id));
 			pager_select(view, line);
