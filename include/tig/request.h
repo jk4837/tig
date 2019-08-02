@@ -28,7 +28,7 @@
 	\
 	REQ_GROUP("View manipulation") \
 	REQ_(ENTER,		"Enter and open selected line"), \
-	REQ_(SENTER,		"Enter and open selected line for reverse type"), \
+	REQ_(SENTER,		"Open reverse selected line"), \
 	REQ_(BACK,		"Go back to the previous view state"), \
 	REQ_(NEXT,		"Move to next"), \
 	REQ_(PREVIOUS,		"Move to previous"), \

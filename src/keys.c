@@ -356,7 +356,7 @@ get_key_name(const struct key key[], size_t keys, bool quote_comma)
 		if (key[i].modifiers.control) {
 			start = "<Ctrl-";
 			end = ">";
-		} else if (*name == ',' && quote_comma) {
+		} else if ((*name == ',' || *name == '.') && quote_comma) {
 			/* Quote commas so they stand out in the help view. */
 			start = "'";
 			end = "'";

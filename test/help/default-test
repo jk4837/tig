@@ -43,15 +43,15 @@ View switching
                            h view-help           Show help view
 View manipulation
                      <Enter> enter               Enter and open selected line
+                    <Ctrl-K> senter              Open reverse selected line
                            < back                Go back to the previous view st
          <Down>, <Ctrl-N>, J next                Move to next
            <Up>, <Ctrl-P>, K previous            Move to previous
                          ',' parent              Move to parent
+                         '.' child               Move to children
                        <Tab> view-next           Move focus to the next view
                      R, <F5> refresh             Reload and refresh view
-                           O maximize            Maximize the current view
-                           q view-close          Close the current view
-[help] - line 1 of 121                                                       23%
+[help] - line 1 of 123                                                       22%
 EOF
 
 assert_equals 'help-search.screen' <<EOF
@@ -75,6 +75,7 @@ View switching
                            h view-help           Show help view
 View manipulation
                      <Enter> enter               Enter and open selected line
+                    <Ctrl-K> senter              Open reverse selected line
                            < back                Go back to the previous view st
          <Down>, <Ctrl-N>, J next                Move to next
            <Up>, <Ctrl-P>, K previous            Move to previous
@@ -82,9 +83,7 @@ View manipulation
                          '.' child               Move to children
                        <Tab> view-next           Move focus to the next view
                      R, <F5> refresh             Reload and refresh view
-                           O maximize            Maximize the current view
-                           q view-close          Close the current view
-[help] - line 19 of 121                                                      23%
+[help] - line 19 of 123                                                      22%
 EOF
 
 assert_equals 'help-collapsed.screen' <<EOF

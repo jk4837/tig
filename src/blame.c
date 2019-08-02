@@ -652,16 +652,17 @@ blame_request(struct view *view, enum request request, struct line *line)
 			break;
 		}
 		if (view_is_displayed(diff) &&
-		    !strcmp(blame->commit->id, diff->ref) &&
+		    !strcmp(commit.parent_id, diff->env->commit) &&
+		    !strcmp(commit.parent_id, diff->ref) &&
 		    !diff->env->go_forward) {
 			diff_common_jump(diff, blame->commit->filename, blame->lineno + 1, view->pos.lineno, false);
 			break;
 		}
 
-		if (view_no_refresh(diff, flags)) {
-			// maybe create state by own then initial can do this too
-			diff_common_jump(diff, blame->commit->filename, blame->lineno + 1, view->pos.lineno, false);
-		} else {
+		// if (view_no_refresh(diff, flags)) {
+		// 	// maybe create state by own then initial can do this too
+		// 	diff_common_jump(diff, blame->commit->filename, blame->lineno + 1, view->pos.lineno, false);
+		// } else {
 			// go from
 			string_ncopy(view->env->file, commit.filename, strlen(commit.filename));
 			string_copy(view->env->ref, commit.parent_id);
@@ -669,7 +670,7 @@ blame_request(struct view *view, enum request request, struct line *line)
 			view->env->goto_lineno = header.orig_lineno;
 			view->env->go_forward = false;
 			view->env->goto_pos_lineno = view->pos.lineno;
-		}
+		// }
 		open_diff_view(view, flags);
 		break;
 

@@ -1,5 +1,5 @@
 Quick reference for tig keybindings:
-
+ 
 [-] generic bindings
 View switching
                            m view-main           Show main view
@@ -18,6 +18,7 @@ View switching
                            h view-help           Show help view
 View manipulation
                      <Enter> enter               Enter and open selected line
+                    <Ctrl-K> senter              Open reverse selected line
                            < back                Go back to the previous view state
          <Down>, <Ctrl-N>, J next                Move to next
            <Up>, <Ctrl-P>, K previous            Move to previous
@@ -120,6 +121,4 @@ External commands:
                            A ?git stash apply %(stash)
                            P ?git stash pop %(stash)
                            ! ?git stash drop %(stash)
-
-
-[help] - line 1 of 121                                                                100%
+[help] - line 1 of 123                                                                100%

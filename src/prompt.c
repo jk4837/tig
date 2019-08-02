@@ -1018,14 +1018,14 @@ run_prompt_command(struct view *view, const char *argv[])
 		const char *action = get_status_message(code);
 
 		if (code != SUCCESS) {
-			// report("%s", action);
+			report("%s", action);
 			return REQ_NONE;
 		}
 
 		prompt_update_display(flags);
 
 		if (*action);
-			// report("%s", action);
+			report("%s", action);
 
 	} else if (!strcmp(cmd, "script")) {
 		enum status_code code = open_script(argv[1]);
