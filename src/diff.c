@@ -373,6 +373,7 @@ diff_save_line(struct view *view, struct diff_state *state, enum open_flags flag
 		if (file) {
 			state->file = get_path(file);
 			state->lineno = diff_get_lineno(view, line);
+			state->line_type = line->type;
 			state->pos = view->pos;
 		}
 	}
@@ -402,8 +403,8 @@ diff_restore_line(struct view *view, struct diff_state *state)
 	while ((line = find_next_line_by_type(view, line, LINE_DIFF_CHUNK))) {
 		unsigned int lineno = diff_get_lineno(view, line);
 
-		for (line++; view_has_line(view, line) && line->type != LINE_DIFF_CHUNK; line++) {
-			if (lineno == state->lineno) {
+		do {
+			if (lineno >= state->lineno) {
 				unsigned long lineno = line - view->line;
 				unsigned long offset = lineno - (state->pos.lineno - state->pos.offset);
 
@@ -411,10 +412,13 @@ diff_restore_line(struct view *view, struct diff_state *state)
 				redraw_view(view);
 				return;
 			}
-			if (line->type != LINE_DIFF_DEL &&
-			    line->type != LINE_DIFF_DEL2)
+			line++;
+			if (line->type == LINE_DIFF_CHUNK)
+				break;
+			if (line->type == LINE_DEFAULT || 
+				line->type == state->line_type)
 				lineno++;
-		}
+		} while (view_has_line(view, line));
 	}
 }
 
@@ -546,9 +550,18 @@ diff_get_lineno(struct view *view, struct line *line)
 	if (!parse_chunk_header(&chunk_header, box_text(chunk)))
 		return 0;
 
-	lineno = chunk_header.new.position;
+	/* For chunk header, A, 1 == A-1, 0 == A-1 */
+	if (0 == chunk_header.new.lines) {
+		chunk_header.new.position -= 1;
+		chunk_header.new.lines = 1;
+	}
+	if (0 == chunk_header.old.lines) {
+		chunk_header.old.position -= 1;
+		chunk_header.old.lines = 1;
+	}
+	lineno = chunk_header.new.position - 1;
 
-	for (chunk++; chunk < line; chunk++)
+	for (chunk; chunk < line; chunk++)
 		if (chunk->type != LINE_DIFF_DEL &&
 		    chunk->type != LINE_DIFF_DEL2)
 			lineno++;

@@ -1,0 +1,116 @@
+#!/bin/sh
+
+. libtest.sh
+. libgit.sh
+
+steps '
+  :set diff-context = 0
+  :save-display diff-default.screen
+
+  :22
+  ]
+  :save-display diff-new-plus.screen
+
+  [
+  :save-display diff-new-minus.screen
+'
+
+in_work_dir create_repo_from_tgz "$base_dir/files/scala-js-benchmarks.tgz"
+
+test_tig show 5bd6df6603f25ff035f1f893bfa5738182452664
+
+assert_equals 'diff-default.screen' <<EOF
+commit 5bd6df6603f25ff035f1f893bfa5738182452664
+Author:     Jonas Fonseca <jonas.fonseca@gmail.com>
+AuthorDate: Tue Nov 26 23:31:51 2013 -0500
+Commit:     Jonas Fonseca <jonas.fonseca@gmail.com>
+CommitDate: Tue Nov 26 23:33:30 2013 -0500
+
+    Solve the easiest sudoku grid
+
+    Even though it doesn't exercise the whole implementation. This
+    eliminates the random part, which will make the benchmark more
+    predictable.
+---
+ sudoku/Sudoku.scala | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/sudoku/Sudoku.scala b/sudoku/Sudoku.scala
+index d47499a..a048d1c 100644
+--- a/sudoku/Sudoku.scala
++++ b/sudoku/Sudoku.scala
+@@ -20 +20 @@ object Sudoku extends benchmarks.Benchmark {
+-    solve(hard1) match {
++    solve(grid1) match {
+@@ -22 +22 @@ object Sudoku extends benchmarks.Benchmark {
+-        if (!hard1Solutions.contains(asString(values)))
++        if (!grid1Solutions.contains(asString(values)))
+@@ -119,0 +120,4 @@ object Sudoku extends benchmarks.Benchmark {
++  val grid1Solutions = List(
++    "48392165796734582125187649354813297672956413813679824537268951481425376969
+[diff] 5bd6df6603f25ff035f1f893bfa5738182452664 - line 1 of 30               93%
+EOF
+
+assert_equals 'diff-new-plus.screen' <<EOF
+Author:     Jonas Fonseca <jonas.fonseca@gmail.com>
+AuthorDate: Tue Nov 26 23:31:51 2013 -0500
+Commit:     Jonas Fonseca <jonas.fonseca@gmail.com>
+CommitDate: Tue Nov 26 23:33:30 2013 -0500
+
+    Solve the easiest sudoku grid
+
+    Even though it doesn't exercise the whole implementation. This
+    eliminates the random part, which will make the benchmark more
+    predictable.
+---
+ sudoku/Sudoku.scala | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/sudoku/Sudoku.scala b/sudoku/Sudoku.scala
+index d47499a..a048d1c 100644
+--- a/sudoku/Sudoku.scala
++++ b/sudoku/Sudoku.scala
+@@ -19,5 +19,5 @@ object Sudoku extends benchmarks.Benchmark {
+   def run {
+-    solve(hard1) match {
++    solve(grid1) match {
+       case Some(values) =>
+-        if (!hard1Solutions.contains(asString(values)))
++        if (!grid1Solutions.contains(asString(values)))
+           println("Invalid solution found: " + asString(values))
+@@ -119,2 +119,6 @@ object Sudoku extends benchmarks.Benchmark {
+   val hard1 = ".....6....59.....82....8....45........3........6..3.54...325..6.
+[diff] Changes to 'sudoku/Sudoku.scala:20' - line 23 of 34                   85%
+EOF
+
+assert_equals 'diff-new-minus.screen' <<EOF
+commit 5bd6df6603f25ff035f1f893bfa5738182452664
+Author:     Jonas Fonseca <jonas.fonseca@gmail.com>
+AuthorDate: Tue Nov 26 23:31:51 2013 -0500
+Commit:     Jonas Fonseca <jonas.fonseca@gmail.com>
+CommitDate: Tue Nov 26 23:33:30 2013 -0500
+
+    Solve the easiest sudoku grid
+
+    Even though it doesn't exercise the whole implementation. This
+    eliminates the random part, which will make the benchmark more
+    predictable.
+---
+ sudoku/Sudoku.scala | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/sudoku/Sudoku.scala b/sudoku/Sudoku.scala
+index d47499a..a048d1c 100644
+--- a/sudoku/Sudoku.scala
++++ b/sudoku/Sudoku.scala
+@@ -20 +20 @@ object Sudoku extends benchmarks.Benchmark {
+-    solve(hard1) match {
++    solve(grid1) match {
+@@ -22 +22 @@ object Sudoku extends benchmarks.Benchmark {
+-        if (!hard1Solutions.contains(asString(values)))
++        if (!grid1Solutions.contains(asString(values)))
+@@ -119,0 +120,4 @@ object Sudoku extends benchmarks.Benchmark {
++  val grid1Solutions = List(
++    "48392165796734582125187649354813297672956413813679824537268951481425376969
+[diff] Changes to 'sudoku/Sudoku.scala:20' - line 22 of 30                   93%
+EOF

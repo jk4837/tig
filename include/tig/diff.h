@@ -26,6 +26,7 @@ struct diff_state {
 	bool highlight;
 	const char *file;
 	unsigned int lineno;
+	enum line_type line_type;
 	struct position pos;
 	struct io view_io;
 };
